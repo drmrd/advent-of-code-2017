@@ -87,22 +87,19 @@
              (taxicab-metric {:x rung :y (- rung)} {:x (- rung) :y rung})
              (taxicab-metric {:x (- rung) :y rung} x))))))
 
-(defn- find-side
+(defn- find-side [n]
   "Returns the side of the spiral on which the n-th square first appears.
    A corner square is always assigned the 'second' side on which it would appear
    from the perspective of a counterclockwise spiral generation algorithm. For
    instance, a top-right corner will always return :top, since it is the bridge
    from a right side to a top side as the spiral is formed."
-  ([n]
-   (let [side-length-complete-square (side-length-complete-square n)
-         side-length-current-square (+ side-length-complete-square 2)
-         complete-square (* side-length-complete-square
-                            side-length-complete-square)
-         outer-squares (- n complete-square)
-         side-order (quot outer-squares (dec side-length-current-square))]
-     (case side-order 0 :right 1 :top 2 :left 3 :bottom)))
-  ([{:keys [x y] :as coords}]
-   {:pre [(integer? x) (integer? y) (= (keys coords) [:x :y])]}))
+  (let [side-length-complete-square (side-length-complete-square n)
+        side-length-current-square (+ side-length-complete-square 2)
+        complete-square (* side-length-complete-square
+                           side-length-complete-square)
+        outer-squares (- n complete-square)
+        side-order (quot outer-squares (dec side-length-current-square))]
+    (case side-order 0 :right 1 :top 2 :left 3 :bottom)))
 
 (defn- at-main-diag-corner? [n]
   (let [side-length-complete-square (side-length-complete-square n)
@@ -133,7 +130,7 @@
                                                   (side->radial-data))
         lateral-coord-symb (other-key radial-coord-symb)]
     (-> {}
-        (assoc radial-coord-symb (* (radial-norm n) radial-coord-sign))
+        (assoc radial-coord-symb (* (radial-seminorm n) radial-coord-sign))
         (assoc lateral-coord-symb (* (lateral-coordinate n)
                                      (if (at-main-diag-corner? n) -1 1))))))
 
