@@ -17,4 +17,4 @@
          (reduce +))))
 
 (count-valid-passphrases all-distinct?)
-(count-valid-passphrases #(and (all-distinct? %) (no-anagrams? %)))
+(count-valid-passphrases no-anagrams?)
