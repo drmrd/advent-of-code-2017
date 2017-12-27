@@ -9,3 +9,10 @@
                  (mod 10)
                  (list)
                  (concat result))))))
+
+(defn file->vec [file-name]
+  (->> file-name
+       (slurp)
+       (#(concat "[" % "]"))
+       (apply str)
+       (read-string)))

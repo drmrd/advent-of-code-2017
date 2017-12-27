@@ -1,62 +1,55 @@
 (ns advent-of-code.day6
-  (:require [clojure.set :as set]))
+  (:require [advent-of-code.core :refer [file->vec]])
+  (:import [java.util ArrayList Set LinkedHashSet]))
 
 (set! *warn-on-reflection* true)
 
-(def sample-memory [0 2 7 0])
-(def memory-array (->> "resources/day6_input.txt"
-                       (slurp)
-                       (#(concat "[" % "]"))
-                       (apply str)
-                       (read-string)))
+(def memory-array (file->vec "resources/day6_input.txt"))
 
-(defn- max-info [arr]
-  "Return the index and value of the maximum value in a given array."
-  (let [max-val (apply max arr)] [(.indexOf arr max-val) max-val]))
+(defn- max-info [s]
+  "Return the index and value of the maximum member of a sequence."
+  (let [max-val (apply max s)]
+    {:max-idx (.indexOf s max-val) :max-val max-val}))
 
-(defn- reallocate [memory length]
-  (let [[index-of-max max-val] (max-info memory)
-        blocks-for-all (quot max-val length)
-        remaining-blocks (mod max-val length)
-        banks-at-end (min remaining-blocks (- (dec length) index-of-max))
-        banks-at-start (max (- remaining-blocks banks-at-end) 0)
+(defn- new-blocks-at-bank [{:keys [cur-idx max-idx max-val
+                                   blocks-for-each blocks-leftover
+                                   leftovers-pre-max leftovers-post-max]}]
+  (let [gets-a-leftover-block? (or (< cur-idx leftovers-pre-max)
+                                   (and (> cur-idx max-idx)
+                                        (< cur-idx (+ max-idx leftovers-post-max 1))))]
+    (+ blocks-for-each (if gets-a-leftover-block? 1 0))))
+
+;; TODO: Handle the variable verbosity here
+(defn reallocate [memory]
+  (let [{:keys [max-idx max-val]} (max-info memory)
+        bank-count (count memory)
+        blocks-for-each (quot max-val bank-count)
+        blocks-leftover (mod max-val bank-count)
+        leftovers-post-max (min blocks-leftover (- (dec bank-count) max-idx))
+        leftovers-pre-max (max (- blocks-leftover leftovers-post-max) 0)
         new-banks (transient [])]
-
-    (dorun
-     (for [i (range length)
-           :let [current-val (nth memory i)
-                 shifted-val (+ (cond
-                                  (and (> i index-of-max) (= current-val max-val))
-                                  current-val
-                                  :else (mod current-val max-val))
-                                blocks-for-all)]]
-       (conj! new-banks
-              (if (or (< i banks-at-start)
-                      (and (> i index-of-max)
-                           (< i (+ index-of-max banks-at-end 1))))
-                (inc shifted-val)
-                shifted-val))))
+    (dorun (for [i (range bank-count) :let [cur-val (nth memory i)]]
+             (conj! new-banks
+                    (+ (if (not= max-idx i) cur-val 0)
+                       (new-blocks-at-bank {:cur-idx i :max-idx max-idx :max-val max-val
+                                            :blocks-for-each blocks-for-each
+                                            :blocks-leftover blocks-leftover
+                                            :leftovers-pre-max leftovers-pre-max
+                                            :leftovers-post-max leftovers-post-max})))))
     (persistent! new-banks)))
 
-(assert (= (reallocate [0 2 7 0] 4) [2 4 1 2]))
-(assert (= (reallocate [2 4 1 2] 4) [3 1 2 3]))
-(assert (= (reallocate [3 1 2 3] 4) [0 2 3 4]))
-(assert (= (reallocate [0 2 3 4] 4) [1 3 4 1]))
-(assert (= (reallocate [1 3 4 1] 4) [2 4 1 2]))
+(defn- element? [^Set set element]
+  "Determines whether a given java.util.Set contains an element."
+  (.contains set element))
 
-(def non-empty? (comp not empty?))
+(defn reallocation-cycle-data [initial-memory-banks]
+  (let [history (LinkedHashSet.)
+        bank-count (count initial-memory-banks)]
+    (loop [cycles 0 memory initial-memory-banks]
+      (if (element? history memory)
+        {:cycle-count cycles
+         :loop-length (- (count history) (.indexOf (ArrayList. history) memory))}
+        (do (.add history memory)
+            (recur (inc cycles) (reallocate memory)))))))
 
-(defn- element? [element set]
-  (non-nil? (set element)))
-
-(defn- count-redistribution-cycles [memory-seq]
-  (let [history (transient #{})
-        bank-count (count memory-seq)]
-    (loop [cycles 0 memory memory-seq]
-      (if (element? memory history)
-        cycles
-        (do (conj! history memory)
-            (recur (inc cycles) (reallocate memory bank-count)))))))
-
-(assert (= (count-redistribution-cycles [0 2 7 0]) 5))
-(count-redistribution-cycles memory-array)
+(reallocation-cycle-data memory-array)
