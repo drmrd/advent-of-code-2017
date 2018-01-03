@@ -1,4 +1,5 @@
-(ns advent-of-code.core)
+(ns advent-of-code.core
+  (:require [clojure.string :as str]))
 
 (defn int-to-digit-list [n]
   (loop [rem n result (transient '())]
@@ -9,6 +10,9 @@
                  (mod 10)
                  (list)
                  (concat result))))))
+
+(defn file-lines [file-name]
+  (-> file-name (slurp) (str/split-lines)))
 
 (defn file->vec [file-name]
   (->> file-name
