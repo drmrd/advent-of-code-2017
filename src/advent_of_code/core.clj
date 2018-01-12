@@ -20,5 +20,3 @@
        (#(concat "[" % "]"))
        (apply str)
        (read-string)))
-
-(defn file->bytes [file-name] (->> file-name (slurp) (map byte)))
