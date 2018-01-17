@@ -1,5 +1,5 @@
 (ns advent-of-code.day10
-  (:require [advent-of-code.core :refer [file->vec file->bytes]]
+  (:require [advent-of-code.core :refer [file->vec]]
             [clojure.string :as str])
   (:require [advent-of-code.circular-buffer :refer :all])
   (:require [clojure.test :refer :all])
@@ -63,7 +63,7 @@
   (apply str (map #(format "%02x" %) octets)))
 
 (with-test
-  (defn- knot-hash
+  (defn knot-hash
     ([s] (knot-hash s 256 [17 31 73 47 23]))
     ([s buffer-size salt]
      (-> s
